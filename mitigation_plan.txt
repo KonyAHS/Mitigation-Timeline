@@ -3,7 +3,22 @@ Notes: Single target heavy damage on tank
 Mitigation: Use Rampart and Reprisal
 Time: 00:30
 
-Mechanic: Raid-wide AOE
+Mechanic: Raid-wide AOE 1
 Notes: Heavy raid-wide damage
 Mitigation: Use Divine Veil and Sacred Soil
 Time: 01:15
+
+Mechanic: Raid-wide AOE 2
+Notes: Heavy raid-wide damage
+Mitigation: Use Divine Veil and Sacred Soil
+Time: 02:15
+
+Mechanic: Raid-wide AOE 3
+Notes: Heavy raid-wide damage
+Mitigation: Use Divine Veil and Sacred Soil
+Time: 03:15
+
+Mechanic: Raid-wide AOE 4
+Notes: Heavy raid-wide damage
+Mitigation: Use Divine Veil and Sacred Soil
+Time: 04:15

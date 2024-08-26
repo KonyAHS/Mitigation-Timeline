@@ -12,7 +12,7 @@ class MitigationOverlay:
         self.root.title("FFXIV Mitigation Overlay")
         
         # Set window size and position
-        self.root.geometry("400x200")
+        self.root.geometry("400x270")  # Adjusted height to accommodate the next mechanic bar and divider line
         self.root.attributes("-topmost", True)  # Always on top
         self.root.attributes("-alpha", 0.8)  # Transparency level
         
@@ -29,6 +29,17 @@ class MitigationOverlay:
         # Timer
         self.timer_label = tk.Label(self.root, text="Time: 00:00", font=("Helvetica", 12))
         self.timer_label.pack(pady=10)
+
+        # Divider line
+        self.canvas = tk.Canvas(self.root, height=1, bg="black")
+        self.canvas.pack(fill=tk.X, padx=10, pady=5)
+
+        # Next Mechanic Info (Left aligned)
+        self.next_mechanic_label = tk.Label(self.root, text="Next: N/A", font=("Helvetica", 10), anchor="w", justify="left")
+        self.next_mechanic_label.pack(fill=tk.X, padx=10, pady=5)
+
+        self.next_mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 10), anchor="w", justify="left")
+        self.next_mitigation_label.pack(fill=tk.X, padx=10, pady=5)
         
         # Load the mechanics
         self.mechanics = self.load_mechanics('mitigation_plan.txt')
@@ -57,11 +68,11 @@ class MitigationOverlay:
                 if line.startswith("Mechanic:"):
                     if mechanic:
                         mechanics.append(mechanic)
-                    mechanic = {'name': line.split(":")[1].strip()}
+                    mechanic = {'name': line.split(": ")[1].strip()}
                 elif line.startswith("Notes:"):
-                    mechanic['notes'] = line.split(":")[1].strip()
+                    mechanic['notes'] = line.split(": ")[1].strip()
                 elif line.startswith("Mitigation:"):
-                    mechanic['mitigation'] = line.split(":")[1].strip()
+                    mechanic['mitigation'] = line.split(": ")[1].strip()
                 elif line.startswith("Time:"):
                     mechanic['time'] = self.time_to_seconds(line.split(": ")[1].strip())
             if mechanic:
@@ -108,6 +119,15 @@ class MitigationOverlay:
             
             # Update the start_time to match the mechanic's specified time
             self.start_time = time.time() - mechanic['time']
+            
+            # Update next mechanic information if available
+            if self.current_mechanic + 1 < len(self.mechanics):
+                next_mechanic = self.mechanics[self.current_mechanic + 1]
+                self.next_mechanic_label.config(text=f"Next: {next_mechanic['name']}")
+                self.next_mitigation_label.config(text=f"Mitigation: {next_mechanic['mitigation']}")
+            else:
+                self.next_mechanic_label.config(text="Next: N/A")
+                self.next_mitigation_label.config(text="Mitigation: N/A")
     
     def update_timer(self):
         while True:
