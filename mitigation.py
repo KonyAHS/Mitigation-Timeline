@@ -12,7 +12,7 @@ class MitigationOverlay:
         self.root.title("FFXIV Mitigation Overlay")
         
         # Set window size and position
-        self.root.geometry("400x270")  # Adjusted height to accommodate the next mechanic bar and divider line
+        self.root.geometry("400x300")  # Adjusted height to accommodate the new "mechanic happening in X seconds" field
         self.root.attributes("-topmost", True)  # Always on top
         self.root.attributes("-alpha", 0.8)  # Transparency level
         
@@ -30,6 +30,10 @@ class MitigationOverlay:
         self.timer_label = tk.Label(self.root, text="Time: 00:00", font=("Helvetica", 12))
         self.timer_label.pack(pady=10)
 
+        # "Mechanic happening in X seconds" field
+        self.next_mechanic_time_label = tk.Label(self.root, text="Mechanic happening in: N/A", font=("Helvetica", 12))
+        self.next_mechanic_time_label.pack(pady=10)
+
         # Divider line
         self.canvas = tk.Canvas(self.root, height=1, bg="black")
         self.canvas.pack(fill=tk.X, padx=10, pady=5)
@@ -46,6 +50,7 @@ class MitigationOverlay:
         self.current_mechanic = 0
         self.start_time = None
         self.fight_started = False
+        self.next_mechanic_time = None
         
         # Keybindings
         keyboard.add_hotkey('shift+space', self.start_fight)
@@ -125,9 +130,12 @@ class MitigationOverlay:
                 next_mechanic = self.mechanics[self.current_mechanic + 1]
                 self.next_mechanic_label.config(text=f"Next: {next_mechanic['name']}")
                 self.next_mitigation_label.config(text=f"Mitigation: {next_mechanic['mitigation']}")
+                self.next_mechanic_time = next_mechanic['time']  # Store the next mechanic's time
             else:
                 self.next_mechanic_label.config(text="Next: N/A")
                 self.next_mitigation_label.config(text="Mitigation: N/A")
+                self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
+                self.next_mechanic_time = None  # No next mechanic
     
     def update_timer(self):
         while True:
@@ -136,6 +144,17 @@ class MitigationOverlay:
                 minutes = elapsed_time // 60
                 seconds = elapsed_time % 60
                 self.timer_label.config(text=f"Time: {minutes:02}:{seconds:02}")
+
+                # Update the time until the next mechanic
+                if self.next_mechanic_time is not None:
+                    time_until_next_mechanic = self.next_mechanic_time - elapsed_time
+                    if time_until_next_mechanic > 0:
+                        self.next_mechanic_time_label.config(text=f"Mechanic happening in: {time_until_next_mechanic} seconds")
+                    else:
+                        self.next_mechanic_time_label.config(text="Mechanic happening now!")
+                else:
+                    self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
+                    
             time.sleep(1)
 
 if __name__ == "__main__":
