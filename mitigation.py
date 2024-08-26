@@ -12,7 +12,7 @@ class MitigationOverlay:
         self.root.title("FFXIV Mitigation Overlay")
         
         # Set window size and position
-        self.root.geometry("400x300")  # Adjusted height to accommodate the new "mechanic happening in X seconds" field
+        self.root.geometry("400x330")  # Adjusted height to accommodate the new fields
         self.root.attributes("-topmost", True)  # Always on top
         self.root.attributes("-alpha", 0.8)  # Transparency level
         
@@ -32,7 +32,7 @@ class MitigationOverlay:
 
         # "Mechanic happening in X seconds" field
         self.next_mechanic_time_label = tk.Label(self.root, text="Mechanic happening in: N/A", font=("Helvetica", 12))
-        self.next_mechanic_time_label.pack(pady=10)
+        self.next_mechanic_time_label.pack(pady=5)
 
         # Divider line
         self.canvas = tk.Canvas(self.root, height=1, bg="black")
@@ -45,12 +45,17 @@ class MitigationOverlay:
         self.next_mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 10), anchor="w", justify="left")
         self.next_mitigation_label.pack(fill=tk.X, padx=10, pady=5)
         
+        # "Mechanic two ahead happening in X seconds" field
+        self.two_ahead_mechanic_time_label = tk.Label(self.root, text="Mechanic two ahead happening in: N/A", font=("Helvetica", 12))
+        self.two_ahead_mechanic_time_label.pack(pady=5)
+        
         # Load the mechanics
         self.mechanics = self.load_mechanics('mitigation_plan.txt')
         self.current_mechanic = 0
         self.start_time = None
         self.fight_started = False
         self.next_mechanic_time = None
+        self.two_ahead_mechanic_time = None
         
         # Keybindings
         keyboard.add_hotkey('shift+space', self.start_fight)
@@ -136,6 +141,14 @@ class MitigationOverlay:
                 self.next_mitigation_label.config(text="Mitigation: N/A")
                 self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
                 self.next_mechanic_time = None  # No next mechanic
+
+            # Update mechanic two ahead information if available
+            if self.current_mechanic + 2 < len(self.mechanics):
+                two_ahead_mechanic = self.mechanics[self.current_mechanic + 2]
+                self.two_ahead_mechanic_time = two_ahead_mechanic['time']  # Store the two ahead mechanic's time
+            else:
+                self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
+                self.two_ahead_mechanic_time = None  # No mechanic two ahead
     
     def update_timer(self):
         while True:
@@ -152,8 +165,21 @@ class MitigationOverlay:
                         self.next_mechanic_time_label.config(text=f"Mechanic happening in: {time_until_next_mechanic} seconds")
                     else:
                         self.next_mechanic_time_label.config(text="Mechanic happening now!")
+                        self.advance_mechanic()  # Automatically advance to next mechanic when time reaches 0
                 else:
                     self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
+                
+                # Update the time until the two-ahead mechanic
+                if self.two_ahead_mechanic_time is not None:
+                    time_until_two_ahead_mechanic = self.two_ahead_mechanic_time - elapsed_time
+                    if time_until_two_ahead_mechanic > 0:
+                        self.two_ahead_mechanic_time_label.config(text=f"Mechanic two ahead happening in: {time_until_two_ahead_mechanic} seconds")
+                    else:
+                        self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening now!")
+                else:
+                    self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
+                    
+
                     
             time.sleep(1)
 
