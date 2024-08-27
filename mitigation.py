@@ -32,7 +32,7 @@ class MitigationOverlay:
         self.notes_label = tk.Label(self.root, text="Notes: N/A", font=("Helvetica", 12))
         self.notes_label.pack(pady=10)
 
-        self.mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 12))
+        self.mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 16))
         self.mitigation_label.pack(pady=10)
 
         # Timer
@@ -68,11 +68,11 @@ class MitigationOverlay:
         self.two_ahead_mechanic_time = None
 
         # Keybindings
-        keyboard.add_hotkey('shift+space', self.start_fight)
+        keyboard.add_hotkey('shift+T', self.start_fight)
         keyboard.add_hotkey('shift+right', self.advance_mechanic_manual)
         keyboard.add_hotkey('shift+left', self.go_back_mechanic_manual)
         keyboard.add_hotkey('shift+q', self.close_program)
-        keyboard.add_hotkey('shift+r', self.restart_fight)
+        keyboard.add_hotkey('shift+}', self.restart_fight)
 
         # Start the GUI loop in a separate thread
         threading.Thread(target=self.update_timer, daemon=True).start()
@@ -184,7 +184,7 @@ class MitigationOverlay:
             mechanic = self.mechanics[self.current_mechanic]
             self.mechanic_label.config(text=f"Mechanic: {mechanic['name']}")
             self.notes_label.config(text=f"Notes: {mechanic['notes']}")
-            self.mitigation_label.config(text=f"Mitigation: {mechanic['mitigation']}")
+            self.mitigation_label.config(text=f"{mechanic['mitigation']}")
             
             # Don't reset the timer when automatically advancing mechanics
             if manual:
@@ -194,7 +194,7 @@ class MitigationOverlay:
             if self.current_mechanic + 1 < len(self.mechanics):
                 next_mechanic = self.mechanics[self.current_mechanic + 1]
                 self.next_mechanic_label.config(text=f"Next: {next_mechanic['name']}")
-                self.next_mitigation_label.config(text=f"Mitigation: {next_mechanic['mitigation']}")
+                self.next_mitigation_label.config(text=f"{next_mechanic['mitigation']}")
                 self.next_mechanic_time = next_mechanic['time']
             else:
                 self.next_mechanic_label.config(text="Next: N/A")

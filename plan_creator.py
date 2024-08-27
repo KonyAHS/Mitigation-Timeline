@@ -52,21 +52,40 @@ class MitigationPlanDesigner:
         self.import_button.pack(side="left", padx=10)
 
         # Bind double-click event to start editing a row
-        self.tree.bind("<Double-1>", self.on_double_click)
 
         # Bind Shift+S to trigger export
-        self.root.bind("<Control-s>", lambda event: self.export_with_keybind())
 
         # Keybindings
-        self.root.bind("<Shift-a>", lambda event: self.add_row())
-        self.root.bind("<Shift-d>", lambda event: self.delete_row())
-        self.root.bind("<Shift-e>", lambda event: self.edit_row())
-        self.root.bind("<Shift-u>", lambda event: self.move_row("up"))
-        self.root.bind("<Shift-m>", lambda event: self.move_row("down"))
+        self.tree.bind("<Double-1>", self.on_double_click)
+        self.root.bind("<Control-s>", lambda event: self.export_with_keybind())
+        self.root.bind("<Shift-A>", lambda event: self.add_row())
+        self.root.bind("<Shift-D>", lambda event: self.delete_row())
+        self.root.bind("<Shift-E>", lambda event: self.edit_row())
+        self.root.bind("<Shift-U>", lambda event: self.move_row("up"))
+        self.root.bind("<Shift-M>", lambda event: self.move_row("down"))
 
 
         # To store the entry widgets
         self.entry_widgets = {}
+
+    def disable_keybinds(self):
+        """Disable global keybinds."""
+        self.root.unbind("<Shift-D>")
+        self.root.unbind("<Shift-E>")
+        self.root.unbind("<Shift-U>")
+        self.root.unbind("<Shift-A>")
+        self.root.unbind("<Shift-M>")
+        self.root.unbind("<Control-s>")
+
+    def enable_keybinds(self):
+        """Enable global keybinds."""
+        self.root.bind("<Shift-A>", lambda event: self.add_row())
+        self.root.bind("<Shift-D>", lambda event: self.delete_row())
+        self.root.bind("<Shift-E>", lambda event: self.edit_row())
+        self.root.bind("<Shift-U>", lambda event: self.move_row("up"))
+        self.root.bind("<Shift-M>", lambda event: self.move_row("down"))
+        self.root.bind("<Control-s>", lambda event: self.export_with_keybind())
+
 
     def add_row(self):
         """Add an empty row to the treeview."""
@@ -96,6 +115,8 @@ class MitigationPlanDesigner:
 
     def editing_row(self, selected_item):
         """Enable editing of the selected row."""
+        self.disable_keybinds()  # Disable keybinds while editing
+
         values = self.tree.item(selected_item, "values")
 
         # Create Entry widgets for each column in the row
@@ -109,6 +130,7 @@ class MitigationPlanDesigner:
             # Store the entry widget reference
             self.entry_widgets[column] = entry
 
+
     def save_edit(self, item, col_idx):
         """Save the edited data back to the treeview."""
         # Retrieve new values from the entry widgets
@@ -120,21 +142,32 @@ class MitigationPlanDesigner:
             if entry_widget:
                 new_value = entry_widget.get()
 
+                # Validate the Time field format first
                 if column == "Time":
                     if not self.validate_time_format(new_value):
                         messagebox.showerror("Error", "Invalid Time format. Please use MM:SS.")
                         entry_widget.focus_set()
-                        return
+                        return  # Stop saving if Time is invalid, no widgets destroyed
 
+                # If validation passes, update the new values for the row
                 new_values[idx] = new_value
 
         # If all fields are valid, destroy the entry widgets and update the row
         for entry_widget in self.entry_widgets.values():
             entry_widget.destroy()
 
+        # Update the treeview with the new values
         self.tree.item(item, values=new_values)
+
+        # Clear entry widgets and exit edit mode
         self.entry_widgets.clear()
-        messagebox.showinfo("Success", "Row updated successfully!")
+
+        # Re-enable keybinds after editing
+        self.enable_keybinds()
+
+        # Optionally: Provide feedback that the row has been updated
+        # messagebox.showinfo("Success", "Row updated successfully!")
+
 
 
     def move_row(self, direction):
@@ -206,7 +239,7 @@ class MitigationPlanDesigner:
                     current_row = {}
 
         self.update_window_title()
-        messagebox.showinfo("Success", f"Data imported from {file_path}")
+        # messagebox.showinfo("Success", f"Data imported from {file_path}")
 
     def update_window_title(self):
         """Update the window title to reflect the current file."""
