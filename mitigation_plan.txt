@@ -1,24 +1,20 @@
-Mechanic: Tankbuster
+Mechanic: Tankbuster 1
 Notes: Single target heavy damage on tank
 Mitigation: Use Rampart and Reprisal
-Time: 00:30
+Time: 00:05
+
+Mechanic: Tankbuster 2
+Notes: Single target heavy damage on tank
+Mitigation: Use Rampart and Reprisal
+Time: 00:10
 
 Mechanic: Raid-wide AOE 1
 Notes: Heavy raid-wide damage
 Mitigation: Use Divine Veil and Sacred Soil
-Time: 01:15
+Time: 00:15
 
 Mechanic: Raid-wide AOE 2
 Notes: Heavy raid-wide damage
 Mitigation: Use Divine Veil and Sacred Soil
-Time: 02:15
+Time: 00:20
 
-Mechanic: Raid-wide AOE 3
-Notes: Heavy raid-wide damage
-Mitigation: Use Divine Veil and Sacred Soil
-Time: 03:15
-
-Mechanic: Raid-wide AOE 4
-Notes: Heavy raid-wide damage
-Mitigation: Use Divine Veil and Sacred Soil
-Time: 04:15

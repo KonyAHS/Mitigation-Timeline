@@ -103,7 +103,7 @@ class MitigationOverlay:
         if not self.fight_started:
             self.start_time = time.time()
             self.fight_started = True
-            self.update_mechanic_display()
+            self.update_mechanic_display()  # Preload the first mechanic
             print("Fight started!")
         else:
             print("Fight already started!")
@@ -120,36 +120,38 @@ class MitigationOverlay:
             self.update_mechanic_display()
             print(f"Went back to mechanic {self.current_mechanic + 1}")
     
-    def update_mechanic_display(self):
+    def update_mechanic_display(self, manual=False):
         if self.fight_started and self.mechanics:
             mechanic = self.mechanics[self.current_mechanic]
             self.mechanic_label.config(text=f"Mechanic: {mechanic['name']}")
             self.notes_label.config(text=f"Notes: {mechanic['notes']}")
             self.mitigation_label.config(text=f"Mitigation: {mechanic['mitigation']}")
             
-            # Update the start_time to match the mechanic's specified time
-            self.start_time = time.time() - mechanic['time']
+            # Don't reset the timer when automatically advancing mechanics
+            if manual:
+                self.start_time = time.time() - mechanic['time']  # Adjust start time only on manual input
             
             # Update next mechanic information if available
             if self.current_mechanic + 1 < len(self.mechanics):
                 next_mechanic = self.mechanics[self.current_mechanic + 1]
                 self.next_mechanic_label.config(text=f"Next: {next_mechanic['name']}")
                 self.next_mitigation_label.config(text=f"Mitigation: {next_mechanic['mitigation']}")
-                self.next_mechanic_time = next_mechanic['time']  # Store the next mechanic's time
+                self.next_mechanic_time = next_mechanic['time']
             else:
                 self.next_mechanic_label.config(text="Next: N/A")
                 self.next_mitigation_label.config(text="Mitigation: N/A")
-                self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
                 self.next_mechanic_time = None  # No next mechanic
 
-            # Update mechanic two ahead information if available
+            # Update two-ahead mechanic information if available
             if self.current_mechanic + 2 < len(self.mechanics):
                 two_ahead_mechanic = self.mechanics[self.current_mechanic + 2]
-                self.two_ahead_mechanic_time = two_ahead_mechanic['time']  # Store the two ahead mechanic's time
+                self.two_ahead_mechanic_time_label.config(text=f"Mechanic two ahead happening in: {two_ahead_mechanic['time'] - mechanic['time']} seconds")
+                self.two_ahead_mechanic_time = two_ahead_mechanic['time']
             else:
                 self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
                 self.two_ahead_mechanic_time = None  # No mechanic two ahead
-    
+
+
     def update_timer(self):
         while True:
             if self.fight_started:
@@ -168,7 +170,7 @@ class MitigationOverlay:
                         self.advance_mechanic()  # Automatically advance to next mechanic when time reaches 0
                 else:
                     self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
-                
+
                 # Update the time until the two-ahead mechanic
                 if self.two_ahead_mechanic_time is not None:
                     time_until_two_ahead_mechanic = self.two_ahead_mechanic_time - elapsed_time
@@ -179,9 +181,8 @@ class MitigationOverlay:
                 else:
                     self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
                     
-
-                    
             time.sleep(1)
+
 
 if __name__ == "__main__":
     MitigationOverlay()
