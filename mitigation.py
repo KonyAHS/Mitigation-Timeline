@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk  # Import for the dropdown menu (Combobox)
 import time
 import threading
 import keyboard
@@ -12,20 +13,28 @@ class MitigationOverlay:
         self.root.title("FFXIV Mitigation Overlay")
         
         # Set window size and position
-        self.root.geometry("400x330")  # Adjusted height to accommodate the new fields
+        self.root.geometry("400x380")  # Adjusted height to accommodate the new dropdown
         self.root.attributes("-topmost", True)  # Always on top
         self.root.attributes("-alpha", 0.8)  # Transparency level
-        
+
+        # Dropdown for selecting the mitigation plan
+        self.plan_label = tk.Label(self.root, text="Select Mitigation Plan:", font=("Helvetica", 12))
+        self.plan_label.pack(pady=5)
+
+        self.plan_combobox = ttk.Combobox(self.root, state="readonly")
+        self.plan_combobox.pack(pady=5)
+        self.populate_plan_dropdown()
+
         # Mechanic info
         self.mechanic_label = tk.Label(self.root, text="Mechanic: Waiting...", font=("Helvetica", 16))
         self.mechanic_label.pack(pady=10)
-        
+
         self.notes_label = tk.Label(self.root, text="Notes: N/A", font=("Helvetica", 12))
         self.notes_label.pack(pady=10)
-        
+
         self.mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 12))
         self.mitigation_label.pack(pady=10)
-        
+
         # Timer
         self.timer_label = tk.Label(self.root, text="Time: 00:00", font=("Helvetica", 12))
         self.timer_label.pack(pady=10)
@@ -44,23 +53,24 @@ class MitigationOverlay:
 
         self.next_mitigation_label = tk.Label(self.root, text="Mitigation: N/A", font=("Helvetica", 10), anchor="w", justify="left")
         self.next_mitigation_label.pack(fill=tk.X, padx=10, pady=5)
-        
+
         # "Mechanic two ahead happening in X seconds" field
         self.two_ahead_mechanic_time_label = tk.Label(self.root, text="Mechanic two ahead happening in: N/A", font=("Helvetica", 12))
         self.two_ahead_mechanic_time_label.pack(pady=5)
-        
-        # Load the mechanics
-        self.mechanics = self.load_mechanics('mitigation_plan.txt')
+
+        # Load the initial mitigation plan (will be overwritten when the fight starts)
+        self.current_plan = None
+        self.mechanics = []
         self.current_mechanic = 0
         self.start_time = None
         self.fight_started = False
         self.next_mechanic_time = None
         self.two_ahead_mechanic_time = None
-        
+
         # Keybindings
         keyboard.add_hotkey('shift+space', self.start_fight)
-        keyboard.add_hotkey('shift+right', self.advance_mechanic2)
-        keyboard.add_hotkey('shift+left', self.go_back_mechanic2)
+        keyboard.add_hotkey('shift+right', self.advance_mechanic_manual)
+        keyboard.add_hotkey('shift+left', self.go_back_mechanic_manual)
         keyboard.add_hotkey('shift+q', self.close_program)
         keyboard.add_hotkey('shift+r', self.restart_fight)
 
@@ -68,9 +78,19 @@ class MitigationOverlay:
         threading.Thread(target=self.update_timer, daemon=True).start()
         self.root.mainloop()
 
+    def populate_plan_dropdown(self):
+        """Populates the dropdown menu with all .txt files in the program's directory."""
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        txt_files = [f for f in os.listdir(dir_path) if f.endswith('.txt')]
+        self.plan_combobox['values'] = txt_files
+        if txt_files:
+            self.plan_combobox.current(0) 
+
     def load_mechanics(self, filename):
-        dir_path = os.path.dirname(os.path.realpath(__file__))  # Get the directory of the current script
-        file_path = os.path.join(dir_path, filename)  # Join the directory with the filename
+        """Loads the mitigation plan from the selected file."""
+        print(filename)
+        file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+        print(file_path)
         mechanics = []
         with open(file_path, 'r') as file:
             mechanic = {}
@@ -102,12 +122,50 @@ class MitigationOverlay:
 
     def start_fight(self):
         if not self.fight_started:
-            self.start_time = time.time()
-            self.fight_started = True
-            self.update_mechanic_display()  # Preload the first mechanic
-            print("Fight started!")
+            # Load the selected mitigation plan
+            self.current_plan = self.plan_combobox.get()
+            if self.current_plan:
+                self.mechanics = self.load_mechanics(self.current_plan)
+                self.start_time = time.time()
+                self.fight_started = True
+                self.update_mechanic_display()  # Preload the first mechanic
+                print(f"Fight started with plan: {self.current_plan}")
+                
+                # Hide the dropdown and label after the fight starts
+                self.plan_combobox.pack_forget()
+                self.plan_label.pack_forget()
+            else:
+                print("No plan selected!")
         else:
             print("Fight already started!")
+
+    def restart_fight(self):
+        """Restarts the program from the beginning, resetting all values to the initial state."""
+        self.current_mechanic = 0
+        self.fight_started = False
+        self.start_time = None
+        self.next_mechanic_time = None
+        self.two_ahead_mechanic_time = None
+
+        self.reset_ui_elements()
+        print("Fight reset!")
+
+
+    def advance_mechanic_manual(self):
+        if self.fight_started and self.current_mechanic < len(self.mechanics) - 1:
+            self.start_time = time.time() - self.mechanics[self.current_mechanic]['time']
+            # Set the timer to the current mechanic's time when manually advancing
+            self.update_mechanic_display(manual=True)
+            print(f"Advanced to mechanic {self.current_mechanic + 1}")
+
+    def go_back_mechanic_manual(self):
+        for _ in range(2):
+            if self.fight_started and self.current_mechanic > 0:
+                self.current_mechanic -= 1
+                # Set the timer to the current mechanic's time when manually going back
+                self.start_time = time.time() - self.mechanics[self.current_mechanic]['time']
+                self.update_mechanic_display(manual=True)
+                print(f"Went back to mechanic {self.current_mechanic + 1}")
 
     def advance_mechanic(self):
         if self.fight_started and self.current_mechanic < len(self.mechanics) - 1:
@@ -120,43 +178,6 @@ class MitigationOverlay:
             self.current_mechanic -= 1
             self.update_mechanic_display()
             print(f"Went back to mechanic {self.current_mechanic + 1}")
-
-    def advance_mechanic2(self):
-        if self.fight_started and self.current_mechanic < len(self.mechanics) - 1:
-            self.start_time = time.time() - self.mechanics[self.current_mechanic]['time']
-            # Set the timer to the current mechanic's time when manually advancing
-            self.update_mechanic_display(manual=True)
-            print(f"Advanced to mechanic {self.current_mechanic + 1}")
-
-    def go_back_mechanic2(self):
-        for _ in range(2):
-            if self.fight_started and self.current_mechanic > 0:
-                self.current_mechanic -= 1
-                # Set the timer to the current mechanic's time when manually going back
-                self.start_time = time.time() - self.mechanics[self.current_mechanic]['time']
-                self.update_mechanic_display(manual=True)
-                print(f"Went back to mechanic {self.current_mechanic + 1}")
-
-    def restart_fight(self):
-        """Restarts the program from the beginning, resetting all values to initial state."""
-        self.current_mechanic = 0
-        self.fight_started = False
-        self.start_time = None
-        self.next_mechanic_time = None
-        self.two_ahead_mechanic_time = None
-
-        # Reset UI elements
-        self.mechanic_label.config(text="Mechanic: Waiting...")
-        self.notes_label.config(text="Notes: N/A")
-        self.mitigation_label.config(text="Mitigation: N/A")
-        self.timer_label.config(text="Time: 00:00")
-        self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
-        self.next_mechanic_label.config(text="Next: N/A")
-        self.next_mitigation_label.config(text="Mitigation: N/A")
-        self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
-        print("Fight reset!")
-
-
 
     def update_mechanic_display(self, manual=False):
         if self.fight_started and self.mechanics:
@@ -218,6 +239,44 @@ class MitigationOverlay:
                     self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
 
             time.sleep(1)
+
+    def reset_ui_elements(self):
+        """Removes and reloads the UI elements in the correct order."""
+        # Remove all elements
+        self.plan_combobox.pack_forget()
+        self.plan_label.pack_forget()
+        self.mechanic_label.pack_forget()
+        self.notes_label.pack_forget()
+        self.mitigation_label.pack_forget()
+        self.timer_label.pack_forget()
+        self.next_mechanic_time_label.pack_forget()
+        self.canvas.pack_forget()
+        self.next_mechanic_label.pack_forget()
+        self.next_mitigation_label.pack_forget()
+        self.two_ahead_mechanic_time_label.pack_forget()
+
+        # Repack elements in correct order
+        self.plan_label.pack(pady=5)
+        self.plan_combobox.pack(pady=5)
+        self.mechanic_label.pack(pady=10)
+        self.notes_label.pack(pady=10)
+        self.mitigation_label.pack(pady=10)
+        self.timer_label.pack(pady=10)
+        self.next_mechanic_time_label.pack(pady=5)
+        self.canvas.pack(fill=tk.X, padx=10, pady=5)
+        self.next_mechanic_label.pack(fill=tk.X, padx=10, pady=5)
+        self.next_mitigation_label.pack(fill=tk.X, padx=10, pady=5)
+        self.two_ahead_mechanic_time_label.pack(pady=5)
+
+        self.mechanic_label.config(text="Mechanic: Waiting...")
+        self.notes_label.config(text="Notes: N/A")
+        self.mitigation_label.config(text="Mitigation: N/A")
+        self.timer_label.config(text="Time: 00:00")
+        self.next_mechanic_time_label.config(text="Mechanic happening in: N/A")
+        self.next_mechanic_label.config(text="Next: N/A")
+        self.next_mitigation_label.config(text="Mitigation: N/A")
+        self.two_ahead_mechanic_time_label.config(text="Mechanic two ahead happening in: N/A")
+
 
 
 if __name__ == "__main__":
