@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import os
 
 class MitigationPlanDesigner:
     def __init__(self, root):
         self.root = root
         self.root.title("Mitigation Plan Designer")
         self.root.geometry("800x600")
+
+        self.current_file = None  # To store the path of the imported file
 
         # Setup Treeview (like a spreadsheet)
         self.tree = ttk.Treeview(self.root, columns=("Mechanic", "Notes", "Mitigation", "Time"), show="headings")
@@ -51,6 +54,17 @@ class MitigationPlanDesigner:
         # Bind double-click event to start editing a row
         self.tree.bind("<Double-1>", self.on_double_click)
 
+        # Bind Shift+S to trigger export
+        self.root.bind("<Control-s>", lambda event: self.export_with_keybind())
+
+        # Keybindings
+        self.root.bind("<Shift-a>", lambda event: self.add_row())
+        self.root.bind("<Shift-d>", lambda event: self.delete_row())
+        self.root.bind("<Shift-e>", lambda event: self.edit_row())
+        self.root.bind("<Shift-u>", lambda event: self.move_row("up"))
+        self.root.bind("<Shift-m>", lambda event: self.move_row("down"))
+
+
         # To store the entry widgets
         self.entry_widgets = {}
 
@@ -90,7 +104,7 @@ class MitigationPlanDesigner:
             entry = tk.Entry(self.root)
             entry.insert(0, values[idx])
             entry.place(x=x, y=y + self.tree.winfo_rooty() - self.root.winfo_rooty(), width=width, height=height)
-            entry.bind("<Return>", lambda e, item=selected_item, col_idx=idx: self.save_edit(item, col_idx))
+            entry.bind("<Return>", lambda e, item=selected_item, idx=idx: self.save_edit(item, idx))
 
             # Store the entry widget reference
             self.entry_widgets[column] = entry
@@ -100,19 +114,28 @@ class MitigationPlanDesigner:
         # Retrieve new values from the entry widgets
         new_values = list(self.tree.item(item, "values"))
 
+        # Validate the Time field first before saving anything
         for idx, column in enumerate(self.tree["columns"]):
-            if idx == col_idx:  # Only update the relevant column
-                entry_widget = self.entry_widgets.get(column)
-                if entry_widget:
-                    new_value = entry_widget.get()
-                    new_values[idx] = new_value
-                    entry_widget.destroy()  # Destroy entry widget after saving
+            entry_widget = self.entry_widgets.get(column)
+            if entry_widget:
+                new_value = entry_widget.get()
 
-        # Update treeview with new values
+                if column == "Time":
+                    if not self.validate_time_format(new_value):
+                        messagebox.showerror("Error", "Invalid Time format. Please use MM:SS.")
+                        entry_widget.focus_set()
+                        return
+
+                new_values[idx] = new_value
+
+        # If all fields are valid, destroy the entry widgets and update the row
+        for entry_widget in self.entry_widgets.values():
+            entry_widget.destroy()
+
         self.tree.item(item, values=new_values)
-
-        # Clear entry widgets
         self.entry_widgets.clear()
+        messagebox.showinfo("Success", "Row updated successfully!")
+
 
     def move_row(self, direction):
         """Move the selected row up or down."""
@@ -129,23 +152,41 @@ class MitigationPlanDesigner:
 
     def export_to_txt(self):
         """Export the data to a .txt file."""
-        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-        if not file_path:
-            return
+        if self.current_file:
+            # If there is an existing file, overwrite it
+            self.save_to_file(self.current_file)
+        else:
+            # Ask user for the file name to save as
+            file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+            if file_path:
+                self.current_file = file_path
+                self.save_to_file(file_path)
+                self.update_window_title()
 
+    def save_to_file(self, file_path):
+        """Helper function to save the data to the specified file."""
         # Get data from treeview
         with open(file_path, 'w') as file:
             for row_id in self.tree.get_children():
                 row = self.tree.item(row_id)['values']
                 file.write(f"Mechanic: {row[0]}\nNotes: {row[1]}\nMitigation: {row[2]}\nTime: {row[3]}\n\n")
 
-        messagebox.showinfo("Success", "Data exported successfully!")
+        messagebox.showinfo("Success", f"Data saved to {file_path}")
+
+    def export_with_keybind(self):
+        """Triggered by Shift+S keybind to either export or overwrite the file."""
+        if self.current_file:
+            self.save_to_file(self.current_file)  # Overwrite the imported file
+        else:
+            self.export_to_txt()  # Prompt the user to save as a new file
 
     def import_from_txt(self):
         """Import data from a .txt file."""
         file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if not file_path:
             return
+
+        self.current_file = file_path  # Store the file path for future overwrites
 
         with open(file_path, 'r') as file:
             self.tree.delete(*self.tree.get_children())  # Clear current rows
@@ -164,7 +205,36 @@ class MitigationPlanDesigner:
                     self.tree.insert("", "end", values=(current_row['Mechanic'], current_row['Notes'], current_row['Mitigation'], current_row['Time']))
                     current_row = {}
 
-        messagebox.showinfo("Success", "Data imported successfully!")
+        self.update_window_title()
+        messagebox.showinfo("Success", f"Data imported from {file_path}")
+
+    def update_window_title(self):
+        """Update the window title to reflect the current file."""
+        if self.current_file:
+            file_name = os.path.basename(self.current_file)
+            self.root.title(f"Mitigation Plan Designer - {file_name}")
+        else:
+            self.root.title("Mitigation Plan Designer")
+    
+    def validate_time_format(self, time_str):
+        """Validate the format of the Time field (MM:SS)."""
+        try:
+            # Split the time string into minutes and seconds
+            minutes, seconds = time_str.split(":")
+            
+            # Check if both parts are exactly 2 digits long and are integers
+            if len(minutes) == 2 and len(seconds) == 2 and minutes.isdigit() and seconds.isdigit():
+                minutes = int(minutes)
+                seconds = int(seconds)
+                # Ensure that minutes are non-negative and seconds are between 0 and 59
+                if 0 <= minutes <= 99 and 0 <= seconds <= 59:
+                    return True
+            return False
+        except ValueError:
+            return False
+
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
