@@ -1,0 +1,44 @@
+Mechanic: Opening Raidwide
+Notes: Unavoidable party-wide damage right after the pull
+Mitigation: Reprisal + Shake It Off
+Time: 00:12
+
+Mechanic: Tankbuster
+Notes: Shared buster on both tanks - stand together
+Mitigation: Rampart + Heart of Corundum
+Time: 00:28
+
+Mechanic: Spread Markers
+Notes: Spread to your clock spot, healers pre-shield
+Mitigation: Sacred Soil
+Time: 00:45
+
+Mechanic: Heavy Raidwide
+Notes: Hits hard and leaves a bleed for 15s
+Mitigation: Divine Veil + Feint + Addle
+Time: 01:05
+
+Mechanic: Stack Marker
+Notes: Stack on the healer with the marker
+Mitigation: Kerachole + Shield Samba
+Time: 01:24
+
+Mechanic: Tankbuster Cleave
+Notes: Main tank takes it, everyone else behind the boss
+Mitigation: Sentinel / Vengeance
+Time: 01:40
+
+Mechanic: Double Raidwide
+Notes: Two hits back to back
+Mitigation: Reprisal + Expedient
+Time: 02:02
+
+Mechanic: Adds Phase
+Notes: Tanks pick up adds, DPS burn the left add first
+Mitigation: Tank LB if wiping
+Time: 02:30
+
+Mechanic: Enrage Cast
+Notes: Push the boss before the cast finishes
+Mitigation: Everything left
+Time: 03:15
